@@ -64,7 +64,7 @@ log "installing packages"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
 apt-get install -y -qq strongswan strongswan-starter xl2tpd ppp wireguard-tools nftables \
-  curl jq unzip sqlite3 fail2ban qrencode openssl ca-certificates >/dev/null
+  curl jq unzip sqlite3 fail2ban qrencode openssl ca-certificates python3 python3-venv python3-pip sudo >/dev/null
 
 # ---------- 2. kernel settings -------------------------------
 log "sysctl: forwarding, policy routing, conntrack"
@@ -292,6 +292,21 @@ else
   fi
 fi
 
+# A loopback-only proxy lets the Telegram bot reach Telegram through the same
+# fail-closed Finland egress.  It is never exposed on a public interface.
+if ! api panel/api/inbounds/list | jq -e '.obj[] | select(.port==10808 and .listen=="127.0.0.1")' >/dev/null; then
+  log "creating loopback proxy for the optional Telegram bot"
+  bot_proxy=$(jq -n '{up:0,down:0,total:0,remark:"rdnet-bot-local-socks",enable:true,
+    expiryTime:0,listen:"127.0.0.1",port:10808,protocol:"mixed",tag:"in-10808-tcpudp",
+    excludeFromSub:true,settings:{auth:"noauth",udp:true},streamSettings:{},
+    sniffing:{enabled:true,destOverride:["http","tls","quic"],metadataOnly:false,routeOnly:false}}')
+  if ! api panel/api/inbounds/add -X POST -H 'Content-Type: application/json' -d "$bot_proxy" | jq -e '.success' >/dev/null; then
+    bot_proxy=$(jq '.settings|=tojson | .streamSettings|=tojson | .sniffing|=tojson' <<<"$bot_proxy")
+    api panel/api/inbounds/add -X POST -H 'Content-Type: application/json' -d "$bot_proxy" | jq -e '.success' >/dev/null \
+      || die "could not create the local Telegram proxy"
+  fi
+fi
+
 # Iranian DNS resolvers may return a filtering IP for WhatsApp/Meta.  When a
 # client resolves locally, sniffing recovers the real HTTP/TLS/QUIC hostname
 # without requiring a client-side config change.  Apply it to existing VLESS
@@ -377,6 +392,55 @@ backend = systemd
 EOF
 systemctl enable fail2ban >/dev/null
 systemctl restart fail2ban
+
+# ---------- 11. optional RDnet Telegram bot ------------------
+if [[ -n "${TELEGRAM_BOT_TOKEN:-}" ]]; then
+  log "RDnet Telegram bot: V2Ray + L2TP + WireGuard management"
+  id -u rdnet-bot >/dev/null 2>&1 || useradd --system --home /var/lib/rdnet-bot --shell /usr/sbin/nologin rdnet-bot
+  install -d -o rdnet-bot -g rdnet-bot -m 700 /var/lib/rdnet-bot /var/lib/rdnet-bot/backups
+  install -d -o root -g rdnet-bot -m 750 /var/lib/rdnet-vpn-stats
+  install -d -m 755 /opt/rdnet-bot /etc/rdnet-bot
+  install -m 644 "$REPO_DIR/bot/rdnet_bot.py" "$REPO_DIR/bot/backup.py" "$REPO_DIR/bot/README.md" /opt/rdnet-bot/
+  install -m 644 "$REPO_DIR/bot/requirements.txt" /opt/rdnet-bot/requirements.txt
+  [[ -x /opt/rdnet-bot/venv/bin/python ]] || python3 -m venv /opt/rdnet-bot/venv
+  /opt/rdnet-bot/venv/bin/pip install -q --disable-pip-version-check -r /opt/rdnet-bot/requirements.txt
+
+  install -m 755 "$REPO_DIR/bot/rdnet-vpn-helper.py" /usr/local/sbin/rdnet-vpn-helper
+  install -m 755 "$REPO_DIR/bot/ppp-rdnet-up" /etc/ppp/ip-up.d/rdnet-status
+  install -m 755 "$REPO_DIR/bot/ppp-rdnet-down" /etc/ppp/ip-down.d/rdnet-status
+  install -m 440 "$REPO_DIR/bot/rdnet-bot.sudoers" /etc/sudoers.d/rdnet-bot-vpn
+  visudo -cf /etc/sudoers.d/rdnet-bot-vpn >/dev/null
+  for unit in rdnet-bot.service rdnet-bot-backup.service rdnet-bot-backup.timer rdnet-bot-health.service rdnet-bot-health.timer rdnet-vpn-sample.service rdnet-vpn-sample.timer; do
+    install -m 644 "$REPO_DIR/bot/$unit" "/etc/systemd/system/$unit"
+  done
+
+  bot_token=$TOKEN
+  [[ -n "$bot_token" ]] || die "could not create the panel API token for RDnet Bot"
+  owner_code=$(openssl rand -hex 12)
+  [[ -f /root/rdnet-owner-bootstrap-code ]] && owner_code=$(cat /root/rdnet-owner-bootstrap-code)
+  sub_path=$(sqlite3 /etc/x-ui/x-ui.db "select value from settings where key='subPath';")
+  [[ -n "$sub_path" ]] || sub_path=/sub/
+  umask 077
+  cat > /etc/rdnet-bot/env <<EOF
+BOT_TOKEN=$TELEGRAM_BOT_TOKEN
+PANEL_URL=$BASE
+PANEL_TOKEN=$bot_token
+OWNER_BOOTSTRAP_CODE=$owner_code
+DB_PATH=/var/lib/rdnet-bot/bot.db
+CHECK_INTERVAL=600
+TELEGRAM_PROXY=http://127.0.0.1:10808
+SUB_URL_BASE=https://$DOMAIN:$SUB_PORT$sub_path
+EOF
+  printf '%s\n' "$owner_code" > /root/rdnet-owner-bootstrap-code
+  chmod 600 /etc/rdnet-bot/env /root/rdnet-owner-bootstrap-code
+  systemctl daemon-reload
+  systemctl enable --now rdnet-bot.service rdnet-bot-backup.timer rdnet-bot-health.timer rdnet-vpn-sample.timer >/dev/null
+  systemctl restart rdnet-bot.service
+  echo "  Telegram bot : enabled"
+  echo "  Claim owner  : send /claimowner $owner_code to your bot (one time)"
+else
+  warn "TELEGRAM_BOT_TOKEN is empty: RDnet Bot was not installed"
+fi
 
 # ---------- done ---------------------------------------------
 echo

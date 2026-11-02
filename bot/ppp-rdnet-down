@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+[[ -n "${PEERNAME:-}" ]] || exit 0
+/usr/local/sbin/rdnet-vpn-helper l2tp-down "$1" "$PEERNAME" >/dev/null 2>&1 || true
+
+
+
+

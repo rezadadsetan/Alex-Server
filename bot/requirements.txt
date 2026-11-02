@@ -1,0 +1,9 @@
+aiogram==3.22.0
+httpx==0.28.1
+aiosqlite==0.21.0
+aiohttp-socks==0.10.1
+
+
+
+
+

@@ -28,6 +28,7 @@
 | **VLESS + Reality** | گوشی و کامپیوتر (v2rayNG، Hiddify، v2rayN) | پنل وب **3x-ui**: سقف حجم، تاریخ انقضا، لینک سابسکریپشن و آمار مصرف هر کاربر |
 | **L2TP/IPsec** | ویندوز، iOS و مک (بدون نصب اپ) | دستور `l2tp-user` |
 | **WireGuard** | همهٔ سیستم‌عامل‌ها و روترها | دستور `wg-user` همراه با QR |
+| **RDnet Telegram Bot** | مدیریت ساده برای ادمین | ساخت V2Ray/L2TP/WireGuard، QR، وضعیت و مصرف با منوی دکمه‌ای |
 
 <div align="center"><img src="./assets/architecture.svg" width="900" alt="Architecture" /></div>
 
@@ -66,6 +67,8 @@ sudo ./backup.sh                         # full backup for migration
 ```
 کاربران VLESS از داخل **پنل وب** ساخته می‌شوند.
 
+اگر `TELEGRAM_BOT_TOKEN` را در `.env` بگذاری، همان نصب‌کننده بات مدیریت دکمه‌ای را نیز نصب می‌کند. پس از پایان نصب، کد یک‌بارمصرف `/claimowner` چاپ می‌شود؛ بعد از ثبت Owner می‌توان همهٔ کاربران V2Ray، L2TP و WireGuard را از تلگرام ساخت و مدیریت کرد.
+
 ## ساختار repo
 
 | مسیر | کار |
@@ -75,6 +78,7 @@ sudo ./backup.sh                         # full backup for migration
 | `backup.sh` / `restore.sh` | جابه‌جایی به سرور جدید بدون نیاز به کانفیگ جدید برای کاربران |
 | `tools/` | `l2tp-user`، `wg-user`، `alex-status`، `alex-routing` |
 | `docs/` | راهنمای نصب، معماری و درس‌هایی که از راه‌اندازی واقعی گرفته شد |
+| `bot/` | RDnet Bot، helper محدود، ثبت مصرف و سرویس‌های systemd |
 
 ## نکته‌های امنیتی
 - فایل `.env` و بک‌آپ‌ها رمز و کلید دارند. **هرگز commit نشوند** (`.env` در `.gitignore` است).

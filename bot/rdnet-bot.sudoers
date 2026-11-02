@@ -1,0 +1,5 @@
+rdnet-bot ALL=(root) NOPASSWD: /usr/local/sbin/rdnet-vpn-helper *
+
+
+
+

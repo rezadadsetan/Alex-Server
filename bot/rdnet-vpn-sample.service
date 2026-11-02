@@ -1,0 +1,10 @@
+[Unit]
+Description=Sample RDnet WireGuard usage counters
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/rdnet-vpn-helper wg-sample
+
+
+
+

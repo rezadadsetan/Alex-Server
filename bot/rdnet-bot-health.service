@@ -1,0 +1,11 @@
+[Unit]
+Description=Health check for RDnet Telegram Bot
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c 'systemctl is-active --quiet x-ui && systemctl is-active --quiet rdnet-bot && ss -lnt | grep -q "127.0.0.1:10808"'
+
+
+
+
+

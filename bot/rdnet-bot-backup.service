@@ -1,0 +1,18 @@
+[Unit]
+Description=Backup RDnet Telegram Bot database
+
+[Service]
+Type=oneshot
+User=rdnet-bot
+Group=rdnet-bot
+ExecStart=/usr/bin/python3 /opt/rdnet-bot/backup.py
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/rdnet-bot
+
+
+
+
+

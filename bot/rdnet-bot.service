@@ -1,0 +1,30 @@
+[Unit]
+Description=RDnet Telegram VPN Bot
+After=network-online.target x-ui.service
+Wants=network-online.target
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=rdnet-bot
+Group=rdnet-bot
+WorkingDirectory=/opt/rdnet-bot
+EnvironmentFile=/etc/rdnet-bot/env
+ExecStart=/opt/rdnet-bot/venv/bin/python /opt/rdnet-bot/rdnet_bot.py
+Restart=on-failure
+RestartSec=10
+NoNewPrivileges=false
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/rdnet-bot /var/lib/rdnet-vpn-stats /etc/ppp /etc/wireguard /etc/alex-server/wg-clients
+MemoryMax=300M
+
+[Install]
+WantedBy=multi-user.target
+
+
+
+
+
