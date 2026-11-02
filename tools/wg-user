@@ -15,7 +15,7 @@ sync()  { wg syncconf wg-clients <(wg-quick strip wg-clients); }
 case "${1:-}" in
   add)
     valid "${2:-}"; has "$2" && { echo "user $2 already exists"; exit 1; }
-    used=$(grep -oE "AllowedIPs = $WG_NET\.[0-9]+" "$CONF" | awk -F. '{print $4}' | sort -n | tail -1)
+    used=$(grep -oE "AllowedIPs = $WG_NET\.[0-9]+" "$CONF" | awk -F. '{print $4}' | sort -n | tail -1 || true)
     n=$(( ${used:-9} + 1 )); (( n <= 254 )) || { echo "no free addresses"; exit 1; }
     priv=$(wg genkey); pub=$(wg pubkey <<<"$priv")
     printf '[Peer]\n# name=%s\nPublicKey = %s\nAllowedIPs = %s.%s/32\n\n' "$2" "$pub" "$WG_NET" "$n" >> "$CONF"
@@ -35,10 +35,10 @@ PersistentKeepalive = 25
 EOF
     sync
     echo "added $2 ($WG_NET.$n) — config: $DIR/$2.conf"
-    qrencode -t ansiutf8 < "$DIR/$2.conf" ;;
+    qrencode -t ansiutf8 < "$DIR/$2.conf" || true ;;
   show)
     valid "${2:-}"; [[ -f "$DIR/$2.conf" ]] || { echo "no such user $2"; exit 1; }
-    cat "$DIR/$2.conf"; qrencode -t ansiutf8 < "$DIR/$2.conf" ;;
+    cat "$DIR/$2.conf"; qrencode -t ansiutf8 < "$DIR/$2.conf" || true ;;
   del)
     valid "${2:-}"; has "$2" || { echo "no such user $2"; exit 1; }
     cp -a "$CONF" "$CONF.bak"
@@ -46,6 +46,6 @@ EOF
     install -m 600 "$CONF.tmp" "$CONF"; rm -f "$CONF.tmp" "$DIR/$2.conf"
     sync; echo "deleted $2" ;;
   list)
-    grep -E '^# name=|^AllowedIPs' "$CONF" | paste - - | sed -E 's/# name=//; s/AllowedIPs = //' ;;
+    { grep -E '^# name=|^AllowedIPs' "$CONF" || true; } | paste - - | sed -E 's/# name=//; s/AllowedIPs = //' ;;
   *) echo "usage: wg-user add <name> | show <name> | del <name> | list"; exit 1 ;;
 esac
