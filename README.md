@@ -37,6 +37,16 @@
 
 ## نصب سریع (۵ قدم)
 
+ساده‌ترین روش تعاملی؛ سؤال‌های ضروری را می‌پرسد، رمزها را مخفی می‌گیرد و `.env` و همهٔ سرویس‌ها را خودش می‌سازد:
+
+```bash
+apt-get update && apt-get install -y git
+git clone https://github.com/rezadadsetan/Alex-Server.git && cd Alex-Server
+sudo ./easy-install.sh
+```
+
+روش دستی برای کسانی که می‌خواهند `.env` را مستقیماً تنظیم کنند:
+
 ```bash
 # 1) on a fresh Ubuntu 24.04 server, as root
 apt-get update && apt-get install -y git
@@ -74,6 +84,7 @@ sudo ./backup.sh                         # full backup for migration
 | مسیر | کار |
 |---|---|
 | `install.sh` | نصب و تنظیم کامل. چند بار اجرا کردنش امن است |
+| `easy-install.sh` | نصب تعاملی؛ فقط اطلاعات ضروری را سؤال می‌کند و `.env` را خودکار می‌سازد |
 | `.env.example` | همهٔ تنظیمات در یک فایل |
 | `backup.sh` / `restore.sh` | جابه‌جایی به سرور جدید بدون نیاز به کانفیگ جدید برای کاربران |
 | `tools/` | `l2tp-user`، `wg-user`، `alex-status`، `alex-routing` |
