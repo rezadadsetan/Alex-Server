@@ -219,11 +219,16 @@ log "pinning Xray core $XRAY_VERSION (pre-releases broke older clients)"
 tmp=$(mktemp -d)
 curl -fsSL -m 180 "https://github.com/XTLS/Xray-core/releases/download/$XRAY_VERSION/$XRAY_ZIP" -o "$tmp/x.zip"
 unzip -qo "$tmp/x.zip" xray -d "$tmp"
-if ! cmp -s "$tmp/xray" "$XUI_DIR/bin/$XRAY_BIN"; then
-  [[ -f $XUI_DIR/bin/$XRAY_BIN ]] && cp -a "$XUI_DIR/bin/$XRAY_BIN" "$XUI_DIR/bin/$XRAY_BIN.bak"
-  install -m 755 "$tmp/xray" "$XUI_DIR/bin/$XRAY_BIN"
-fi
+[[ -f $XUI_DIR/bin/$XRAY_BIN ]] && cp -a "$XUI_DIR/bin/$XRAY_BIN" "$XUI_DIR/bin/$XRAY_BIN.bak"
+install -d -m 755 /usr/local/lib/alex-server /etc/systemd/system/x-ui.service.d
+install -m 755 "$tmp/xray" "/usr/local/lib/alex-server/xray-$XRAY_VERSION"
+install -m 755 "$tmp/xray" "$XUI_DIR/bin/$XRAY_BIN"
+cat > /etc/systemd/system/x-ui.service.d/10-pin-xray.conf <<EOF
+[Service]
+ExecStartPre=/usr/bin/install -m 755 /usr/local/lib/alex-server/xray-$XRAY_VERSION $XUI_DIR/bin/$XRAY_BIN
+EOF
 rm -rf "$tmp"
+systemctl daemon-reload
 systemctl restart x-ui
 sleep 3
 
@@ -278,7 +283,7 @@ else
           privateKey:$priv, shortIds:[$sid],
           settings:{publicKey:$pub, fingerprint:"chrome", serverName:"", spiderX:"/"}},
         tcpSettings:{acceptProxyProtocol:false, header:{type:"none"}}},
-      sniffing:{enabled:false, destOverride:["http","tls","quic"], metadataOnly:false, routeOnly:false}}')
+      sniffing:{enabled:true, destOverride:["http","tls","quic"], metadataOnly:false, routeOnly:false}}')
   if ! api panel/api/inbounds/add -X POST -H 'Content-Type: application/json' -d "$body" | jq -e '.success' >/dev/null; then
     # older panel builds want the nested objects as JSON strings
     body=$(jq '.settings|=tojson | .streamSettings|=tojson | .sniffing|=tojson' <<<"$body")
@@ -286,7 +291,28 @@ else
       || die "could not create the VLESS inbound"
   fi
 fi
-api panel/api/server/restartXrayService -X POST >/dev/null
+
+# Iranian DNS resolvers may return a filtering IP for WhatsApp/Meta.  When a
+# client resolves locally, sniffing recovers the real HTTP/TLS/QUIC hostname
+# without requiring a client-side config change.  Apply it to existing VLESS
+# inbounds too, not only to a newly created one.
+if [[ -f /etc/x-ui/x-ui.db ]]; then
+  cp -a /etc/x-ui/x-ui.db "$STATE/x-ui.pre-sniffing.db"
+  sqlite3 /etc/x-ui/x-ui.db <<'SQL'
+UPDATE inbounds
+SET sniffing = json_set(
+  CASE WHEN json_valid(sniffing) THEN sniffing
+       ELSE '{"enabled":true,"destOverride":["http","tls","quic"],"metadataOnly":false,"routeOnly":false}' END,
+  '$.enabled', json('true'),
+  '$.destOverride', json('["http","tls","quic"]'),
+  '$.metadataOnly', json('false'),
+  '$.routeOnly', json('false')
+)
+WHERE protocol = 'vless';
+SQL
+fi
+systemctl restart x-ui
+sleep 3
 
 # ---------- 9. firewall (last, so SSH is checked first) ------
 log "firewall (nftables) — fail-closed: user traffic can only leave through wg-out"

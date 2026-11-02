@@ -7,6 +7,7 @@
 <a href="./docs/SETUP.md"><img src="https://img.shields.io/badge/SETUP_GUIDE-3ccf98?style=for-the-badge&labelColor=0b1220" alt="Setup guide" /></a>
 <a href="./docs/architecture.html"><img src="https://img.shields.io/badge/ARCHITECTURE-6ea0ff?style=for-the-badge&labelColor=0b1220" alt="Architecture" /></a>
 <a href="./docs/LESSONS.md"><img src="https://img.shields.io/badge/LESSONS_LEARNED-ad8bff?style=for-the-badge&labelColor=0b1220" alt="Lessons learned" /></a>
+<a href="./docs/FAQ.md"><img src="https://img.shields.io/badge/FAQ-f6c85f?style=for-the-badge&labelColor=0b1220" alt="FAQ" /></a>
 
 <br>
 
@@ -38,7 +39,7 @@
 ```bash
 # 1) on a fresh Ubuntu 24.04 server, as root
 apt-get update && apt-get install -y git
-git clone https://github.com/Rezaloder/Alex-Server.git && cd Alex-Server
+git clone https://github.com/rezadadsetan/Alex-Server.git && cd Alex-Server
 
 # 2) configure
 cp .env.example .env && nano .env
@@ -53,7 +54,7 @@ sudo ./install.sh
 sudo alex-status
 ```
 
-راهنمای کامل، شامل تنظیم میکروتیک و Windscribe، ساخت کاربر، تنظیم کلاینت‌ها، جابه‌جایی سرور و عیب‌یابی، در **[docs/SETUP.md](./docs/SETUP.md)** است.
+راهنمای کامل، شامل تنظیم میکروتیک و Windscribe، ساخت کاربر، تنظیم کلاینت‌ها، جابه‌جایی سرور و عیب‌یابی، در **[docs/SETUP.md](./docs/SETUP.md)** است. پاسخ خطاهای پرتکرار نیز در **[FAQ](./docs/FAQ.md)** قرار دارد.
 
 ## مدیریت روزانه
 

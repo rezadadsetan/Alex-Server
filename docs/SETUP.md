@@ -15,6 +15,7 @@
 8. [تنظیم کلاینت‌ها](#8)
 9. [جابه‌جایی به سرور جدید](#9)
 10. [عیب‌یابی](#10)
+11. [سؤال‌های پرتکرار](./FAQ.md)
 
 ---
 
@@ -89,8 +90,8 @@ sudo ./install.sh
 3. ساخت کلید تونل خروجی (`wg-out`) و routing جدول 200 با blackhole.
 4. راه‌اندازی WireGuard کاربران و L2TP/IPsec.
 5. نصب **3x-ui** با نسخهٔ ثابت و گواهی Let's Encrypt برای دامنه.
-6. قفل کردن **هستهٔ Xray** روی نسخهٔ پایدار.
-7. تنظیم Xray از طریق API پنل: خروجی فقط از تونل، DNS از نوع DoH و بستن آدرس‌های خصوصی.
+6. قفل دائمی **هستهٔ Xray** روی نسخهٔ سازگار؛ حتی Restart یا آپدیت پنل نمی‌تواند آن را جایگزین کند.
+7. تنظیم Xray از طریق API پنل: خروجی فقط از تونل، DNS از نوع DoH، بستن آدرس‌های خصوصی و فعال‌کردن تشخیص HTTP/TLS/QUIC برای عبور از DNS جعلی.
 8. ساخت inbound مربوط به **VLESS + Reality** با یک کاربر نمونه به اسم `demo`.
 9. فایروال fail-closed و fail2ban.
 
@@ -142,7 +143,7 @@ sudo ./install.sh
 1. **Settings ← Security ← Two-factor**: ورود دو مرحله‌ای را روشن کن و QR را با Google Authenticator اسکن کن.
 2. **Settings ← Subscription**: مطمئن شو سابسکریپشن روشن است و پورتش همان `SUB_PORT` است.
 3. کاربر `demo` را بعد از تست حذف کن.
-4. **هستهٔ Xray را از پنل آپدیت نکن**، به‌خصوص به نسخه‌های pre-release.
+4. هستهٔ Xray توسط installer روی نسخهٔ تست‌شده نگه داشته می‌شود. پنل را می‌توان جداگانه آپدیت کرد؛ برای تغییر هسته ابتدا سازگاری کلاینت‌ها را آزمایش کن.
 
 <a id="7"></a>
 ## ۷. ساخت کاربر
@@ -213,7 +214,7 @@ Settings ← VPN ← Add VPN Configuration ← **L2TP**. Server، Account، Pass
 sudo ./backup.sh            # -> /root/alex-backup-<date>.tar.gz  (copy it off the server)
 
 # new server (fresh Ubuntu 24.04)
-git clone https://github.com/Rezaloder/Alex-Server.git && cd Alex-Server
+git clone https://github.com/rezadadsetan/Alex-Server.git && cd Alex-Server
 cp /path/to/old/.env .env   # same .env (change SSH_PORT if different)
 sudo ./install.sh
 sudo ./restore.sh /root/alex-backup-<date>.tar.gz
@@ -239,5 +240,9 @@ sudo alex-status
 | ping سرور جواب نمی‌دهد | ICMP بسته است | در `.env` مقدار `ALLOW_PING=yes` بگذار. برای تست اتصال، تست TCP بهتر است: `Test-NetConnection DOMAIN -Port 443` |
 | دو کاربر L2TP پشت یک اینترنت هم‌دیگر را قطع می‌کنند | محدودیت ذاتی L2TP/IPsec | آن کاربران را به VLESS یا WireGuard منتقل کن |
 | با زیاد شدن کاربران بعضی سایت‌ها باز نمی‌شوند | جدول conntrack پر شده | اسکریپت ظرفیت را ۶۵۵۳۶ گذاشته. با `alex-status` بررسی کن |
+| واتس‌اپ دیر متصل می‌شود یا روی Connecting می‌ماند | DNS اپراتور مقصد Meta را به IP فیلترینگ می‌فرستد | نصب‌کننده sniffing نوع HTTP/TLS/QUIC را برای همهٔ ورودی‌های VLESS فعال می‌کند؛ installer را دوباره اجرا و سرویس را Restart کن |
+| بعد از آپدیت پنل، VPN وصل می‌شود ولی اینترنت ندارد | آپدیت پنل هستهٔ Xray را با نسخه ناسازگار جایگزین کرده | installer را دوباره اجرا کن. قفل systemd نسخه پایدار را هنگام هر شروع سرویس برمی‌گرداند |
+
+برای علت‌ها، تست‌های دقیق و راه‌حل‌های بیشتر، **[FAQ](./FAQ.md)** را ببین.
 
 </div>
