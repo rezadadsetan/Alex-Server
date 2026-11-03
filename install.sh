@@ -420,6 +420,27 @@ EOF
 systemctl enable fail2ban >/dev/null
 systemctl restart fail2ban
 
+# One boot target owns the complete core stack. Individual units stay enabled
+# too, while the ordering drop-in prevents Xray from racing routing/WireGuard.
+install -d -m 755 /etc/systemd/system/x-ui.service.d
+cat > /etc/systemd/system/x-ui.service.d/20-alex-ordering.conf <<'EOF'
+[Unit]
+After=network-online.target alex-routing.service wg-quick@wg-out.service
+Wants=network-online.target alex-routing.service wg-quick@wg-out.service
+EOF
+cat > /etc/systemd/system/alex-stack.target <<'EOF'
+[Unit]
+Description=Alex Server complete VPN stack
+Requires=nftables.service alex-routing.service wg-quick@wg-out.service
+Wants=x-ui.service wg-quick@wg-clients.service strongswan-starter.service xl2tpd.service fail2ban.service alex-wg-watchdog.timer
+After=network-online.target nftables.service alex-routing.service wg-quick@wg-out.service
+
+[Install]
+WantedBy=multi-user.target
+EOF
+systemctl daemon-reload
+systemctl enable alex-stack.target >/dev/null
+
 # ---------- 11. optional RDnet Telegram bot ------------------
 if [[ -n "${TELEGRAM_BOT_TOKEN:-}" ]]; then
   log "RDnet Telegram bot: V2Ray + L2TP + WireGuard management"
@@ -462,6 +483,7 @@ EOF
   chmod 600 /etc/rdnet-bot/env /root/rdnet-owner-bootstrap-code
   systemctl daemon-reload
   systemctl enable --now rdnet-bot.service rdnet-bot-backup.timer rdnet-bot-health.timer rdnet-vpn-sample.timer >/dev/null
+  systemctl add-wants alex-stack.target rdnet-bot.service rdnet-bot-backup.timer rdnet-bot-health.timer rdnet-vpn-sample.timer
   systemctl restart rdnet-bot.service
   echo "  Telegram bot : enabled"
   echo "  Claim owner  : send /claimowner $owner_code to your bot (one time)"

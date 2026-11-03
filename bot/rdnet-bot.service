@@ -1,7 +1,7 @@
 [Unit]
 Description=RDnet Telegram VPN Bot
-After=network-online.target x-ui.service
-Wants=network-online.target
+After=network-online.target alex-routing.service wg-quick@wg-out.service x-ui.service
+Wants=network-online.target alex-routing.service wg-quick@wg-out.service x-ui.service
 StartLimitIntervalSec=300
 StartLimitBurst=5
 
