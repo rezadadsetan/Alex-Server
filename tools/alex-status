@@ -9,6 +9,18 @@ echo "Services"
 for s in x-ui nftables alex-routing wg-quick@wg-out wg-quick@wg-clients strongswan-starter xl2tpd fail2ban; do
   chk "$s" "systemctl is-active --quiet $s"
 done
+[[ -f /etc/systemd/system/rdnet-bot.service ]] && chk "rdnet-bot" "systemctl is-active --quiet rdnet-bot"
+
+echo "Boot automation"
+chk "alex-stack.target active" "systemctl is-active --quiet alex-stack.target"
+chk "alex-stack.target enabled" "systemctl is-enabled --quiet alex-stack.target"
+chk "wg watchdog enabled" "systemctl is-enabled --quiet alex-wg-watchdog.timer"
+chk "wg watchdog active" "systemctl is-active --quiet alex-wg-watchdog.timer"
+if [[ -f /etc/systemd/system/rdnet-bot.service ]]; then
+  chk "usage sampler active" "systemctl is-active --quiet rdnet-vpn-sample.timer"
+  chk "bot backup active" "systemctl is-active --quiet rdnet-bot-backup.timer"
+  chk "bot health check active" "systemctl is-active --quiet rdnet-bot-health.timer"
+fi
 
 echo "Egress tunnel"
 hs=$(wg show wg-out latest-handshakes 2>/dev/null | awk '{print $2}')

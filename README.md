@@ -79,6 +79,17 @@ sudo ./backup.sh                         # full backup for migration
 
 اگر `TELEGRAM_BOT_TOKEN` را در `.env` بگذاری، همان نصب‌کننده بات مدیریت دکمه‌ای را نیز نصب می‌کند. پس از پایان نصب، کد یک‌بارمصرف `/claimowner` چاپ می‌شود؛ بعد از ثبت Owner می‌توان همهٔ کاربران V2Ray، L2TP و WireGuard را از تلگرام ساخت و مدیریت کرد.
 
+### مسیر شبکهٔ بات
+
+بات برای دورزدن محدودیت Telegram از اینترنت مستقیم ایران استفاده نمی‌کند:
+
+```text
+RDnet Bot → mixed proxy 127.0.0.1:10808 → Xray mark 0x200
+          → table 200 → wg-out → MikroTik Finland → Telegram API
+```
+
+این پروکسی فقط روی loopback گوش می‌دهد و از اینترنت عمومی قابل دسترسی نیست. اگر تونل فنلاند قطع شود، kill switch ارتباط بات و کاربران را fail-closed می‌کند؛ watchdog هر دقیقه handshake را بررسی و تونل stale را خودکار بازیابی می‌کند. تمام سرویس‌ها زیر `alex-stack.target` با ترتیب صحیح Boot می‌شوند.
+
 ## ساختار repo
 
 | مسیر | کار |

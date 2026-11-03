@@ -39,7 +39,18 @@ th{background:var(--surface-2);color:var(--muted);font-size:13px}
 <div class="card"><h3 style="color:var(--vless)">VLESS + Reality</h3><p>اپ به <code>SHARE_ADDR:443</code> وصل می‌شود. از بیرون، اتصال شبیه HTTPS به سایت هدف (مثلاً دیجی‌کالا) دیده می‌شود. Xray کاربر را با UUID شناسایی می‌کند و مصرفش را ثبت می‌کند. خروجی <code>egress</code> بسته‌ها را با mark <code>0x200</code> علامت می‌زند. بعد جدول 200، تونل <code>wg-out</code> و خروجی.</p></div>
 <div class="card"><h3 style="color:var(--l2tp)">L2TP/IPsec</h3><p>اتصال با IKEv1 و PSK روی UDP 500 و 4500 برقرار می‌شود. داخل IPsec یک نشست L2TP و PPP ساخته می‌شود و کاربر IP <code>10.203.62.x</code> می‌گیرد. قاعدهٔ <code>from 10.203.62.0/24 → table 200</code> ترافیک را به <code>wg-out</code> می‌فرستد، با masquerade فقط روی همین تونل.</p></div>
 <div class="card"><h3 style="color:var(--wg)">WireGuard</h3><p>کلاینت به UDP 51820 وصل می‌شود و IP <code>10.203.61.x</code> می‌گیرد. مسیرش مثل L2TP است. کاربران با <code>wg-user</code> ساخته می‌شوند و QR می‌گیرند.</p></div>
+<div class="card"><h3 style="color:#0891b2">RDnet Telegram Bot</h3><p>بات با کاربر محدود systemd اجرا می‌شود. درخواست‌های مدیریتی را از Telegram می‌گیرد، اما ارتباطش با Telegram مستقیم نیست: از mixed proxy محلی <code>127.0.0.1:10808</code> داخل Xray عبور می‌کند؛ Xray آن را با mark <code>0x200</code> به table 200، <code>wg-out</code> و خروجی فنلاند می‌فرستد. API پنل روی همان VPS و از HTTPS پنل فراخوانی می‌شود. helper محدود فقط عملیات معتبر V2Ray، L2TP و WireGuard را انجام می‌دهد.</p></div>
 </div>
+
+<h2>مسیر دقیق بات و بازیابی خودکار</h2>
+<div class="tbl"><table>
+<thead><tr><th>مرحله</th><th>مسیر</th></tr></thead>
+<tbody>
+<tr><td>Telegram</td><td><code>rdnet-bot → 127.0.0.1:10808 → Xray egress(mark 0x200) → table 200 → wg-out → MikroTik Finland → api.telegram.org</code></td></tr>
+<tr><td>مدیریت پنل</td><td><code>rdnet-bot → 3x-ui HTTPS API</code> روی همان سرور؛ توکن فقط در فایل root-readable نگهداری می‌شود</td></tr>
+<tr><td>عملیات سیستمی</td><td><code>rdnet-bot → sudo allowlist → rdnet-vpn-helper</code>؛ بدون shell آزاد و بدون دسترسی به کل تنظیمات سرور</td></tr>
+<tr><td>قطع تونل</td><td>kill switch اینترنت کاربران و بات را می‌بندد؛ <code>alex-wg-watchdog.timer</code> handshake را هر دقیقه بررسی و فقط <code>wg-out</code> را بازیابی می‌کند</td></tr>
+</tbody></table></div>
 
 <h2>پورت‌ها و شبکه‌ها</h2>
 <div class="tbl"><table>
@@ -50,6 +61,8 @@ th{background:var(--surface-2);color:var(--muted);font-size:13px}
 <tr><td>L2TP/IPsec</td><td><code>UDP 500, 4500</code> · <code>1701</code> فقط داخل IPsec · <code>10.203.62.0/24</code></td></tr>
 <tr><td>WireGuard کاربران</td><td><code>UDP 51820</code> · <code>10.203.61.0/24</code></td></tr>
 <tr><td>تونل خروجی</td><td><code>wg-out</code> · <code>10.203.70.2/30</code> ↔ روتر خارجی <code>10.203.70.1</code></td></tr>
+<tr><td>پروکسی داخلی بات</td><td><code>127.0.0.1:10808</code> · mixed SOCKS/HTTP · فقط loopback و غیرقابل دسترسی از اینترنت</td></tr>
+<tr><td>بازیابی تونل</td><td>پورت ثابت <code>54455/UDP</code> · keepalive هر ۲۵ ثانیه · watchdog هر ۶۰ ثانیه</td></tr>
 <tr><td>Policy routing</td><td>mark <code>0x200</code> و subnetهای کاربران ← table <code>200</code> (default dev wg-out + blackhole)</td></tr>
 <tr><td>Let's Encrypt</td><td><code>TCP 80</code> فقط برای صدور و تمدید گواهی</td></tr>
 </tbody></table></div>
@@ -62,7 +75,8 @@ th{background:var(--surface-2);color:var(--muted);font-size:13px}
 <tr><td>Xray متوقف</td><td>کاربران VLESS قطع می‌شوند</td><td>هیچ مسیر جایگزینی وجود ندارد</td></tr>
 <tr><td>درخواست IPv6</td><td>drop</td><td>nft: IPv6 کاربران و IPv6 علامت‌دار drop می‌شود</td></tr>
 <tr><td>تلاش برای رسیدن به پنل از داخل VLESS</td><td>بسته می‌شود</td><td>routing Xray: آدرس‌های private و IP خود سرور ← block</td></tr>
-<tr><td>ریبوت</td><td>همه‌چیز برمی‌گردد</td><td><code>alex-routing.service</code>، nftables و wg-quick همه enable هستند</td></tr>
+<tr><td>ریبوت</td><td>همه‌چیز با ترتیب صحیح برمی‌گردد</td><td><code>alex-stack.target</code>: network → firewall/routing → wg-out → Xray → bot؛ سپس health/usage/backup timers</td></tr>
+<tr><td>سرویس wg-out Active ولی handshake قطع</td><td>موقتاً اینترنت کاربران و بات قطع می‌شود</td><td>پورت ثابت + <code>alex-wg-watchdog.timer</code> تونل stale را خودکار Restart می‌کند</td></tr>
 </tbody></table></div>
 </div>
 </body>
