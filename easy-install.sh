@@ -58,6 +58,7 @@ write_env() { printf '%s=%q\n' "$1" "$2"; }
   write_env EGRESS_PEER_PUBKEY "$EGRESS_PEER_PUBKEY"
   write_env EGRESS_ADDRESS "$EGRESS_ADDRESS"
   write_env EGRESS_MTU 1420
+  write_env EGRESS_LISTEN_PORT 54455
   write_env XUI_VERSION v3.10.2
   write_env XRAY_VERSION v26.3.27
   write_env ALLOW_PING yes

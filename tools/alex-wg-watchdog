@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Recover wg-out when a reboot or stale UDP/NAT state leaves it up without a handshake.
+set -euo pipefail
+exec 9>/run/alex-wg-watchdog.lock
+flock -n 9 || exit 0
+
+iface=wg-out
+max_age=${WG_MAX_HANDSHAKE_AGE:-180}
+cooldown=${WG_RESTART_COOLDOWN:-120}
+state=/run/alex-wg-watchdog.last-restart
+now=$(date +%s)
+
+systemctl is-active --quiet "wg-quick@$iface.service" || exit 0
+latest=$(wg show "$iface" latest-handshakes 2>/dev/null | awk 'NR==1 {print $2+0}')
+(( latest > 0 && now - latest <= max_age )) && exit 0
+
+last=$(cat "$state" 2>/dev/null || echo 0)
+(( now - last >= cooldown )) || exit 0
+printf '%s\n' "$now" > "$state"
+logger -t alex-wg-watchdog "wg-out handshake is missing/stale; restarting tunnel"
+systemctl restart "wg-quick@$iface.service"

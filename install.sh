@@ -40,6 +40,7 @@ WG_PORT=${WG_PORT:-51820}
 WG_NET=${WG_NET:-10.203.61}
 L2TP_NET=${L2TP_NET:-10.203.62}
 EGRESS_MTU=${EGRESS_MTU:-1420}
+EGRESS_LISTEN_PORT=${EGRESS_LISTEN_PORT:-54455}
 XUI_VERSION=${XUI_VERSION:-v3.10.2}
 XRAY_VERSION=${XRAY_VERSION:-v26.3.27}
 ALLOW_PING=${ALLOW_PING:-yes}
@@ -86,6 +87,7 @@ log "egress WireGuard tunnel (wg-out) and routing table 200"
 EGRESS_PUB=$(wg pubkey < "$STATE/egress.key")
 
 install -m 755 "$REPO_DIR/tools/alex-routing" /usr/local/sbin/alex-routing
+install -m 755 "$REPO_DIR/tools/alex-wg-watchdog" /usr/local/sbin/alex-wg-watchdog
 cat > /etc/systemd/system/alex-routing.service <<'EOF'
 [Unit]
 Description=Alex Server policy routing (table 200 + blackhole)
@@ -103,6 +105,30 @@ WantedBy=multi-user.target
 EOF
 systemctl daemon-reload
 systemctl enable --now alex-routing.service >/dev/null
+cat > /etc/systemd/system/alex-wg-watchdog.service <<'EOF'
+[Unit]
+Description=Recover a stale Alex Server egress WireGuard tunnel
+After=network-online.target wg-quick@wg-out.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/alex-wg-watchdog
+EOF
+cat > /etc/systemd/system/alex-wg-watchdog.timer <<'EOF'
+[Unit]
+Description=Check Alex Server egress WireGuard handshake
+
+[Timer]
+OnBootSec=90s
+OnUnitActiveSec=60s
+AccuracySec=10s
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+EOF
+systemctl daemon-reload
+systemctl enable --now alex-wg-watchdog.timer >/dev/null
 
 if [[ -n "${EGRESS_PEER_PUBKEY:-}" ]]; then
   umask 077
@@ -110,6 +136,7 @@ if [[ -n "${EGRESS_PEER_PUBKEY:-}" ]]; then
 [Interface]
 PrivateKey = $(cat "$STATE/egress.key")
 Address = $EGRESS_ADDRESS
+ListenPort = $EGRESS_LISTEN_PORT
 MTU = $EGRESS_MTU
 Table = off
 PostUp = /usr/local/sbin/alex-routing
