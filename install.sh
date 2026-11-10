@@ -406,6 +406,9 @@ table inet alex_server {
   }
 }
 EOF
+if [[ -f /etc/rdnet-proxy/firewall.nft ]]; then
+  printf '\ninclude "/etc/rdnet-proxy/firewall.nft"\n' >> /etc/nftables.conf
+fi
 nft -c -f /etc/nftables.conf
 systemctl enable nftables >/dev/null
 nft -f /etc/nftables.conf
@@ -449,6 +452,7 @@ if [[ -n "${TELEGRAM_BOT_TOKEN:-}" ]]; then
   install -d -o root -g rdnet-bot -m 750 /var/lib/rdnet-vpn-stats
   install -d -m 755 /opt/rdnet-bot /etc/rdnet-bot
   install -m 644 "$REPO_DIR/bot/rdnet_bot.py" "$REPO_DIR/bot/backup.py" "$REPO_DIR/bot/README.md" /opt/rdnet-bot/
+  install -m 644 "$REPO_DIR/bot/rdnet_proxy_ui.py" "$REPO_DIR/bot/rdnet_proxy_store.py" /opt/rdnet-bot/
   install -m 644 "$REPO_DIR/bot/requirements.txt" /opt/rdnet-bot/requirements.txt
   [[ -x /opt/rdnet-bot/venv/bin/python ]] || python3 -m venv /opt/rdnet-bot/venv
   /opt/rdnet-bot/venv/bin/pip install -q --disable-pip-version-check -r /opt/rdnet-bot/requirements.txt

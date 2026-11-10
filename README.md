@@ -29,6 +29,7 @@
 | **L2TP/IPsec** | ویندوز، iOS و مک (بدون نصب اپ) | دستور `l2tp-user` |
 | **WireGuard** | همهٔ سیستم‌عامل‌ها و روترها | دستور `wg-user` همراه با QR |
 | **RDnet Telegram Bot** | مدیریت ساده برای ادمین | ساخت V2Ray/L2TP/WireGuard، QR، وضعیت و مصرف با منوی دکمه‌ای |
+| **HTTPS Proxy اختیاری** | کلاینت‌های سازگار با TLS proxy | حساب اختصاصی، سهمیهٔ حجم، سقف IP هم‌زمان و اکسس‌لیست از بات؛ [نصب جداگانه](bot/PROXY.md) |
 
 <div align="center"><img src="./assets/architecture.svg" width="900" alt="Architecture" /></div>
 
