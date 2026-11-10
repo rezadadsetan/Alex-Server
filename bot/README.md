@@ -25,13 +25,14 @@
 
 ## مدیریت سرویس
 
+### پروکسی اختصاصی
+
+قابلیت اختیاری `/proxyadmin` یا «پروکسی اختصاصی» در `/vpnadmin`: ساخت حساب با
+نام، حجم دلخواه، سقف IP هم‌زمان و اکسس‌لیست؛ مشاهده مصرف، قطع دسترسی و
+ساخت رمز جدید. نصب آن مستقل و فقط با تأیید مدیر است؛ [جزئیات](PROXY.md).
+
 ```bash
 sudo systemctl status rdnet-bot
 sudo journalctl -u rdnet-bot -f
 sudo systemctl restart rdnet-bot
 ```
-
-
-
-
-

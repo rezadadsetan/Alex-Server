@@ -76,6 +76,7 @@ def vpn_main_kb():
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="🚀 V2Ray",callback_data="vpn:v2ray")],
         [InlineKeyboardButton(text="🔐 L2TP",callback_data="vpn:l2tp"),InlineKeyboardButton(text="⚡ WireGuard",callback_data="vpn:wg")],
+        [InlineKeyboardButton(text="🌐 پروکسی اختصاصی",callback_data="px:home")],
         [InlineKeyboardButton(text="🔄 به‌روزرسانی وضعیت",callback_data="vpn:status")]
     ])
 
@@ -370,6 +371,9 @@ async def render_vpn_status(q,service):
         lines.append(f"\n<b>{html.escape(x['name'])}</b> — {status}{extra}\n{traffic}")
     await q.message.answer("\n".join(lines) if users else f"<b>{title}</b>\nکاربری ساخته نشده است.",reply_markup=vpn_service_kb(service))
 
+from rdnet_proxy_ui import register_proxy_ui
+register_proxy_ui(dp, is_admin, audit)
+
 @dp.message(F.text.regexp(r"^[^\s]{1,128}\s+[^\s]{8,256}$"))
 async def link_account(m:Message):
     ensure_user(m.from_user.id); l=lang(m.from_user.id); email,secret=(m.text or "").split(maxsplit=1)
@@ -510,8 +514,3 @@ async def main():
     asyncio.create_task(monitor())
     await dp.start_polling(bot,allowed_updates=dp.resolve_used_update_types())
 if __name__=="__main__": asyncio.run(main())
-
-
-
-
-

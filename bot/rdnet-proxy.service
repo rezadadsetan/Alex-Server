@@ -1,0 +1,32 @@
+[Unit]
+Description=RDNET authenticated TLS HTTP proxy
+After=network-online.target nftables.service x-ui.service
+Wants=network-online.target x-ui.service
+
+[Service]
+Type=simple
+User=rdnet-proxy
+Group=rdnet-proxy
+WorkingDirectory=/opt/rdnet-proxy
+ExecStart=/usr/bin/python3 /opt/rdnet-proxy/rdnet_proxy_server.py
+Restart=on-failure
+RestartSec=5
+UMask=0077
+StateDirectory=rdnet-proxy
+StateDirectoryMode=0700
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+CapabilityBoundingSet=
+ReadWritePaths=/var/lib/rdnet-proxy
+MemoryMax=256M
+LimitNOFILE=2048
+
+[Install]
+WantedBy=multi-user.target
